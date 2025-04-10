@@ -48,8 +48,8 @@ class MainController:
         from .controllers.default_controller import DefaultController
         DefaultController.register(self._app)
  
-        # from .controllers.user_controller import UserController
-        # UserController.register(self._app, self._user_service)
+        from .controllers.user_controller import UserController
+        UserController.register(self._app, self._user_service)
 
         # Mark routes as set up
         self._is_routes_set_up = True
@@ -62,8 +62,8 @@ class MainController:
         self._database_utility.init(self._app)
 
         # Set up the user service.
-        # from .services.user_service import UserInfoService
-        # self._user_service = UserInfoService(self._database_utility)
+        from .services.user_service import UserInfoService
+        self._user_service = UserInfoService(self._database_utility)
 
         # Register the blueprint.
         self._setup_routes()

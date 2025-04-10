@@ -21,15 +21,10 @@ class UserController(MethodView):
         # Extract and validate data from the request JSON
         try:
             username = str(data['username'])
-            password = str(data['password'])
-            email = str(data['email'])
-            phone_number = str(data['phone_number'])
-            points = 0
+            telegram_id = str(data['telegram_id'])
 
-            if email.find("@") == -1:
-                raise ValueError("Invalid email address")
-            elif len(phone_number) != 8:
-                raise ValueError("Invalid phone number (Must be 8 digits)")
+            if len(telegram_id) != 10:
+                raise ValueError("Invalid telegram_id (Must be 10 digits)")
 
         except KeyError as e:
             logger.error(f"Missing required field: {str(e)}")
@@ -49,15 +44,14 @@ class UserController(MethodView):
         try:
             # Create a new history entry in the database
             logger.info("Inserting prediction into database")
-            hashed_password = UserInfo.hash_password(password)
             db_result = self._user_service.insert_user(
-                username, hashed_password, email, phone_number, points
+                telegram_id, username 
             )
 
             # Return JSON object response
             if db_result == "Already exists":
-                logger.error("username already exists")
-                return jsonify({"success": False, "message": "username already exists"}), 400
+                logger.error("telegram_id already exists")
+                return jsonify({"success": False, "message": "telegram_id already exists"}), 400
             elif db_result is not None:
                 logger.info(f"Successfully created entry with id: {db_result}")
                 return jsonify({"success": True, "id": db_result}), 201
@@ -77,40 +71,6 @@ class UserController(MethodView):
             logger.error(f"Unexpected error while adding user: {str(e)}")
             return jsonify({"error": "An unexpected error occurred"}), 500
     
-
-    def login_user(self):
-        logger.info("Handling POST > Login in")
-        data = request.get_json()
-
-        try:
-            username = str(data["username"])
-            password = str(data["password"])
-
-            if not username or not password:
-                logger.error("Username and password are required")
-                return jsonify({"success": False, "message": "Username and password are required"}), 400
-
-            # Fetch user from the database
-            user = UserInfo.query.filter_by(username=username).first()
-            if not user or not UserInfo.check_password(user.hashed_password, password):
-                logger.error("Invalid username or password")
-                return jsonify({"success": False, "message": "Invalid username or password"}), 401
-
-
-            logger.info(f"user '{username}' logged in successfully {session}")
-            return jsonify({"success": True, "message": "Login successful", "user_id": user.user_id}), 200
-
-        except KeyError as e:
-            logger.error(f"Missing required field: {str(e)}")
-            return jsonify({"success": False, "message": f"Missing required field: {str(e)}"}), 400
-        except SQLAlchemyError as e:
-            logger.error(f"Database error during login: {str(e)}")
-            return jsonify({"success": False, "message": "A database error occurred"}), 500
-        except Exception as e:
-            logger.error(f"Unexpected error during login: {str(e)}")
-            return jsonify({"success": False, "message": "An unexpected error occurred"}), 500
-
-
     def get_all_user(self):
         logger.info("Handling GET > get all user")
 
@@ -129,18 +89,17 @@ class UserController(MethodView):
             )
             return jsonify({"error": "An unexpected error occurred"}), 500
     
-
-    def get_by_user_id(self, id):
-        logger.info(f"Handling GET > get user by ID: {id}")
+    def get_by_telegram_id(self, telegram_id):
+        logger.info(f"Handling GET > get user by ID: {telegram_id}")
 
         try:
-            user = self._user_service.get_by_user_id(id)
+            user = self._user_service.get_by_user_telegram_id(telegram_id)
             if user:
                 return jsonify({"success": True, "data": user}), 200
             else:
                 return (
                     jsonify(
-                        {"success": False, "message": f"No user found with ID {id}"}
+                        {"success": False, "message": f"No user found with ID {telegram_id}"}
                     ),
                     404,
                 )
@@ -165,17 +124,17 @@ class UserController(MethodView):
                 500,
             )
         
-    def delete_by_id_user(self, id):
-        logger.info("Handling DELETE > delete by some id")
+    def delete_by_telegram_id(self, telegram_id):
+        logger.info("Handling DELETE > delete by some telegram_id")
  
         try:
-            result = self._user_service.delete_by_user_id(id)
+            result = self._user_service.delete_by_user_telegram_id(telegram_id)
             if result:
                 return (
                     jsonify(
                         {
                             "success": True,
-                            "message": f"Entry with id {id} deleted successfully",
+                            "message": f"Entry with id {telegram_id} deleted successfully",
                         }
                     ),
                     200,
@@ -183,7 +142,7 @@ class UserController(MethodView):
             else:
                 return (
                     jsonify(
-                        {"success": False, "message": f"No entry found with id {id}"}
+                        {"success": False, "message": f"No entry found with id {telegram_id}"}
                     ),
                     404,
                 )
@@ -230,17 +189,20 @@ class UserController(MethodView):
                 500,
             )
         
-    def update_user_points(self, id):
-        logger.info("Handling POST > update user points")
-        
+    def update_user_username(self, telegram_id):
+        logger.info("Handling PUT > update username")
+        data = request.get_json()
+
+        # Extract and validate data from the request JSON
         try:
-            result = self._user_service.update_user_points(id)
+            new_username = str(data['new_username'])
+            result = self._user_service.update_username(telegram_id, new_username)
             if result:
-                return jsonify({"success": True, "message": "User points updated successfully"}), 200
+                return jsonify({"success": True, "message": f"Username updated successfully to {new_username}"}), 200
             else:
                 return (
                     jsonify(
-                        {"success": False, "message": f"No entry found with id {id}"}
+                        {"success": False, "message": f"No entry found with id {telegram_id}"}
                     ),
                     404,
                 )
@@ -276,17 +238,17 @@ class UserController(MethodView):
             methods=["GET"],
         )
 
-        # Get a user by ID
+        # Get a user by telegram_id
         app.add_url_rule(
-            "/api/auth/<int:id>",
-            view_func=cls(user_service).get_by_user_id,
+            "/api/auth/<int:telegram_id>",
+            view_func=cls(user_service).get_by_telegram_id,
             methods=["GET"],
         )
 
-        # delete a user record by id
+        # delete a user record by telegram_id
         app.add_url_rule(
-            "/api/auth/<int:id>",
-            view_func=cls(user_service).delete_by_id_user,
+            "/api/auth/<int:telegram_id>",
+            view_func=cls(user_service).delete_by_telegram_id,
             methods=["DELETE"],
         )
         
@@ -299,14 +261,7 @@ class UserController(MethodView):
                 
         # add a user record
         app.add_url_rule(
-            "/api/auth/login",
-            view_func=cls(user_service).login_user,
-            methods=["POST"],
-        )
-                
-        # add a user record
-        app.add_url_rule(
-            "/api/auth/<int:id>",
-            view_func=cls(user_service).update_user_points,
+            "/api/auth/<int:telegram_id>",
+            view_func=cls(user_service).update_user_username,
             methods=["PUT"],
         )

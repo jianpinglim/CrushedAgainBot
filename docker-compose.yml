@@ -1,0 +1,51 @@
+name: crushed-again-development
+ 
+services:
+  host_database:
+    build:
+      context: ./database
+      dockerfile: Dockerfile
+    image: crushed--again--mysql-57:doaa
+    container_name: crushed--again--mysql-57--container
+    ports:
+      - "3307:3306"
+    volumes:
+      - ./database/logs:/var/log/mysql
+      - ./database/data:/var/lib/mysql
+    environment:
+      - MYSQL_ROOT_PASSWORD=somepassword
+    networks:
+      - crushed_again_network
+
+  host_backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: crushed--again--backend:doaa
+    container_name: crushed--again--backend--container
+    ports:
+      - "5001:5000"
+      - "5679:5679" # For debugging
+    volumes:
+      - ./backend/app:/my_backend_app/app
+    depends_on:
+      - host_database
+    networks:
+      - crushed_again_network
+
+  # host_backend-render:
+  #   build:
+  #     context: ./backend
+  #     dockerfile: Dockerfile.render
+  #   image: crushed--again--backend--render:doaa
+  #   container_name: crushed--again--backend--render--container
+  #   ports:
+  #     - "5001:5000"
+  #     - "5679:5679" # For debugging
+  #   networks:
+  #     - crushed_again_network
+
+networks:
+  crushed_again_network:
+    driver: bridge
+ 

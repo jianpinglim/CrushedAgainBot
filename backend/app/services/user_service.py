@@ -16,8 +16,6 @@ class UserInfoService:
         username: str,
     ):
 
-        # The above checks are performed before creating a new user entry in the database to maintain data integrity.
-        from .models import UserInfo
 
         new_entry = UserInfo(
             user_telegram_id=user_telegram_id,

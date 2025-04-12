@@ -10,15 +10,14 @@ logger = logging.getLogger(__name__)
  
 class DatabaseUtility:
     def __init__(self, app):
-        # TODO: Uncomment this for remote db
-        # current_dir = os.path.dirname(os.path.abspath(__file__))
-        # ca_cert_path = os.path.join(current_dir, "..", "ca.pem")
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        ca_cert_path = os.path.join(current_dir, "..", "ca.pem")
  
-        # # Set SQLAlchemy configs
-        # app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
-        # app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
-        #     "connect_args": {"ssl_ca": ca_cert_path, "ssl_verify_cert": True}
-        # }
+        # Set SQLAlchemy configs
+        app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+        app.config["SQLALCHEMY_ENGINE_OPTIONS"] = {
+            "connect_args": {"ssl_ca": ca_cert_path, "ssl_verify_cert": True}
+        }
  
         self._db = SQLAlchemy(app)
  

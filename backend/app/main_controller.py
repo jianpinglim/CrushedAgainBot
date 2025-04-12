@@ -50,6 +50,9 @@ class MainController:
  
         from .controllers.user_controller import UserController
         UserController.register(self._app, self._user_service)
+ 
+        from .controllers.crush_controller import CrushController
+        CrushController.register(self._app, self._crush_service)
 
         # Mark routes as set up
         self._is_routes_set_up = True
@@ -64,6 +67,10 @@ class MainController:
         # Set up the user service.
         from .services.user_service import UserInfoService
         self._user_service = UserInfoService(self._database_utility)
+        
+        # Set up the crush service.
+        from .services.crush_service import CrushService
+        self._crush_service = CrushService(self._database_utility)
 
         # Register the blueprint.
         self._setup_routes()

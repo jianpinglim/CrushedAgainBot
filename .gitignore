@@ -54,5 +54,6 @@ database/logs/
 wireframes/
 
 .env
+ca.pem
 crushbot.db
 __pycache__/
